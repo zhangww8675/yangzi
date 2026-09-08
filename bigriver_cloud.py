@@ -4,6 +4,7 @@ import hashlib
 import io
 import json
 import re
+import socket
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -24,6 +25,17 @@ FIELDS = [
 ]
 CHINA_TIME = timezone(timedelta(hours=8))
 TAG = re.compile(r"#([A-Za-z0-9_]+)otltag(.*?)#FontTag", re.DOTALL)
+
+# The site publishes IPv4 and IPv6, while some GitHub runners cannot route its
+# IPv6 address. Force requests to use the reachable IPv4 endpoint.
+_SYSTEM_GETADDRINFO = socket.getaddrinfo
+
+
+def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _SYSTEM_GETADDRINFO(host, port, socket.AF_INET, type, proto, flags)
+
+
+socket.getaddrinfo = _ipv4_getaddrinfo
 
 
 def request_with_retry(session, url, attempts=6):
