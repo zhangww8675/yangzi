@@ -1,0 +1,52 @@
+name: Yellow River water data
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 00:20 UTC = 08:20 China Standard Time, once per day.
+    - cron: "20 0 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: yellow-river-water-data
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Collect observations
+        run: python -u yellow_cloud.py
+
+      - name: Commit changed CSV files
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "黄河数据/"
+          if git diff --cached --quiet; then
+            echo "No new observations"
+          else
+            git commit -m "Update Yellow River water data"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
