@@ -3,8 +3,9 @@ name: Yellow River water data
 on:
   workflow_dispatch:
   schedule:
-    # 00:20 UTC = 08:20 China Standard Time, once per day.
-    - cron: "20 0 * * *"
+    # 北京时间 09:20、13:20、17:20 尝试；重复数据由脚本跳过。
+    # 多个时段用于应对源网站间歇性拒绝外部连接。
+    - cron: "20 1,5,9 * * *"
 
 permissions:
   contents: write
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -49,4 +50,3 @@ jobs:
             git pull --rebase origin main
             git push origin HEAD:main
           fi
-
